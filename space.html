@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mini Knowledge Generator — Space Theme</title>
+
+  <!-- Bootstrap (for navbar and grid) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Tailwind (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <style>
+    /* ========== Page & Parallax Layers ========== */
+    :root {
+      --overlay-color: rgba(3,7,18,0.75);
+    }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: #030619;
+      color: #f8fafc;
+      overflow-x: hidden;
+    }
+
+    /* Parallax container fills viewport */
+    .parallax {
+      position: fixed;
+      inset: 0;
+      pointer-events: none; /* allow clicking elements above */
+      overflow: hidden;
+      z-index: 0;
+    }
+    .layer {
+      position: absolute;
+      inset: 0;
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: cover;
+      transform: translate3d(0,0,0);
+      transition: transform 0.08s linear;
+      will-change: transform;
+      opacity: 0.95;
+    }
+    /* Layers with different sizes and positions */
+    .layer.l1 { background-image: url('https://images.unsplash.com/photo-1454789548928-9efd52dc4031?q=80&w=1600&auto=format&fit=crop'); transform-origin: center; }
+    .layer.l2 { background-image: url('https://images.unsplash.com/photo-1475823678248-7b0c8a7f0ecb?q=80&w=1600&auto=format&fit=crop'); transform-origin: center; opacity: 0.85; }
+    .layer.l3 { background-image: url('https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?q=80&w=1600&auto=format&fit=crop'); transform-origin: center; opacity: 0.75; }
+    .layer.l4 { background-image: url('https://images.unsplash.com/photo-1508264165352-258a6a4d83d9?q=80&w=1600&auto=format&fit=crop'); transform-origin: center; opacity: 0.6; filter: blur(0.2px); }
+
+    /* Dark overlay to improve readability */
+    .page-overlay {
+      position: fixed;
+      inset: 0;
+      background: var(--overlay-color);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* ========== Main content ========= */
+    .app {
+      position: relative;
+      z-index: 10; /* above parallax */
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header/navbar spacing to avoid overlap with fixed-top nav */
+    main { padding-top: 90px; padding-bottom: 60px; }
+
+    /* Card & text readability */
+    .knowledge-card {
+      background: rgba(6,10,24,0.78);
+      border: 1px solid rgba(255,255,255,0.04);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      box-shadow: 0 8px 30px rgba(2,6,23,0.6);
+      transition: transform .25s ease, box-shadow .25s ease;
+    }
+    .knowledge-card:hover { transform: translateY(-6px); box-shadow: 0 18px 45px rgba(2,6,23,0.7); }
+
+    .fact-icon {
+      width: 64px;
+      height: 64px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid rgba(255,255,255,0.03);
+      font-size: 30px;
+      box-shadow: 0 6px 18px rgba(3,7,18,0.6);
+    }
+
+    /* Animated fade-in for facts */
+    .fade-in {
+      animation: fadeIn .45s ease both;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Random fact highlight */
+    #randomFact {
+      font-weight: 600;
+      color: #ffd166;
+      text-shadow: 0 0 12px rgba(255,209,102,0.12);
+    }
+
+    /* Make category buttons stand out */
+    .cat-btn.active {
+      background: linear-gradient(90deg,#7c3aed,#06b6d4);
+      color: white;
+      box-shadow: 0 8px 28px rgba(124,58,237,0.18);
+    }
+
+    /* Responsive tweaks */
+    @media (max-width: 768px) {
+      .fact-icon { width: 56px; height: 56px; font-size: 26px; }
+      h1 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Parallax background layers (static images but move slightly with mouse) -->
+  <div class="parallax" aria-hidden="true">
+    <div class="layer l1" data-speed="0.02"></div>
+    <div class="layer l2" data-speed="0.04"></div>
+    <div class="layer l3" data-speed="0.08"></div>
+    <div class="layer l4" data-speed="0.14"></div>
+  </div>
+
+  <!-- dark overlay for readability -->
+  <div class="page-overlay" aria-hidden="true"></div>
+
+  <div class="app">
+    <!-- Bootstrap Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-black bg-opacity-40 fixed-top shadow">
+      <div class="container">
+        <a class="navbar-brand fw-bold d-flex align-items-center gap-2" href="#">
+          <span style="font-size:20px">🚀</span>
+          <span>Mini Knowledge</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse justify-content-end" id="navMenu">
+          <ul class="navbar-nav align-items-center">
+            <li class="nav-item me-2">
+              <button id="btnAll" class="btn btn-sm cat-btn px-3">All</button>
+            </li>
+            <li class="nav-item me-2">
+              <button id="btnSpace" class="btn btn-sm cat-btn px-3">Space</button>
+            </li>
+            <li class="nav-item me-2">
+              <button id="btnScience" class="btn btn-sm cat-btn px-3">Science</button>
+            </li>
+            <li class="nav-item me-2">
+              <button id="btnAnimals" class="btn btn-sm cat-btn px-3">Animals</button>
+            </li>
+            <li class="nav-item me-2">
+              <button id="btnHistory" class="btn btn-sm cat-btn px-3">History</button>
+            </li>
+            <li class="nav-item me-2">
+              <button id="btnTech" class="btn btn-sm cat-btn px-3">Technology</button>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Main -->
+    <main class="container">
+      <!-- Hero -->
+      <section class="text-center text-white mb-8">
+        <div class="py-12">
+          <h1 class="display-5 fw-bold mb-3">Mini Knowledge Generator</h1>
+          <p class="lead mb-4 text-muted">Short, interesting facts across Space, Science, Animals, History and Tech — tap to reveal!</p>
+
+          <div class="d-flex justify-content-center gap-3">
+            <button id="randomBtn" class="btn btn-lg btn-primary px-4 py-2 shadow-lg" aria-label="Get a random fact">✨ Get Random Fact</button>
+            <button id="nextBtn" class="btn btn-lg btn-outline-light px-4 py-2" aria-label="Show another">🔁 Another</button>
+          </div>
+
+          <div class="mt-5">
+            <div id="randomFact" class="fs-4 fade-in">Click "Get Random Fact" to start — enjoy mini knowledge! ✨</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Facts grid -->
+      <section>
+        <div class="row g-4" id="factsGrid">
+          <!-- JS will inject fact cards here -->
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-muted">
+      <small>Made with ❤️ — by <strong>@yourname</strong></small>
+    </footer>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    /* ========== Data: facts (category, text, optional image) ========== */
+    const facts = [
+      // Space
+      { id:1, category: 'Space', icon: '🪐', title:'Saturn', text: "Saturn's ring particles range from tiny dust grains to chunks as large as mountains." },
+      { id:2, category: 'Space', icon: '🌕', title:'Moon', text: "The Moon slowly drifts away from Earth at about 3.8 cm per year." },
+      { id:3, category: 'Space', icon: '☄️', title:'Comets', text: "Comets are like dirty snowballs — icy bodies that release gas and dust when near the Sun." },
+
+      // Science
+      { id:4, category: 'Science', icon: '🔬', title:'Cells', text: "The human body has about 37 trillion cells working together." },
+      { id:5, category: 'Science', icon: '⚛️', title:'Atoms', text: "More than 99.999% of an atom's volume is empty space." },
+
+      // Animals
+      { id:6, category: 'Animals', icon: '🦜', title:'Parrot', text: "Some parrots can live for over 60 years in captivity." },
+      { id:7, category: 'Animals', icon: '🐙', title:'Octopus', text: "Octopuses have three hearts and blue blood." },
+
+      // History
+      { id:8, category: 'History', icon: '📜', title:'Paper', text: "Paper was invented in China around 105 AD and revolutionized information sharing." },
+      { id:9, category: 'History', icon: '🏛️', title:'Library', text: "The Library of Alexandria was once the ancient world's largest collection of knowledge." },
+
+      // Technology
+      { id:10, category: 'Technology', icon: '💾', title:'Storage', text: "The first hard disk (IBM 305) in 1956 stored 5MB of data and weighed over 2000 pounds." },
+      { id:11, category: 'Technology', icon: '🤖', title:'Robots', text: "Modern robots use sensors and machine learning to adapt to new tasks." }
+    ];
+
+    // Keep track of current category filter
+    let currentCategory = 'All';
+
+    /* ========== Utilities ========== */
+    function shuffleArray(arr) {
+      return arr.slice().sort(() => Math.random() - 0.5);
+    }
+
+    /* ========== Render Functions ========== */
+    const grid = document.getElementById('factsGrid');
+    const randomFactEl = document.getElementById('randomFact');
+
+    function renderCards(filter = 'All') {
+      grid.innerHTML = '';
+      const list = (filter === 'All') ? facts : facts.filter(f => f.category === filter);
+      const shuffled = shuffleArray(list);
+      // limit to 6 cards for layout
+      shuffled.slice(0, 6).forEach(f => {
+        const col = document.createElement('div');
+        col.className = 'col-md-4 col-sm-6';
+        col.innerHTML = `
+          <div class="p-3 knowledge-card fade-in h-100 d-flex flex-column">
+            <div class="d-flex align-items-center gap-3 mb-3">
+              <div class="fact-icon">${f.icon}</div>
+              <div>
+                <div class="text-muted small">${f.category}</div>
+                <h5 class="mb-0 mt-1">${escapeHtml(f.title)}</h5>
+              </div>
+            </div>
+            <p class="text-muted mb-4 flex-grow-1">${escapeHtml(f.text)}</p>
+            <div class="mt-auto d-flex justify-content-between align-items-center">
+              <button class="btn btn-sm btn-outline-light view-btn" data-id="${f.id}">Read</button>
+              <div class="text-muted small">ID: ${f.id}</div>
+            </div>
+          </div>
+        `;
+        grid.appendChild(col);
+      });
+      // attach listeners for view buttons
+      document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = Number(e.currentTarget.dataset.id);
+          showFactById(id);
+        });
+      });
+    }
+
+    function showFactById(id) {
+      const f = facts.find(x => x.id === id);
+      if (!f) return;
+      // show in randomFact element with animation
+      randomFactEl.innerHTML = `<span style="font-size:24px; margin-right:8px;">${f.icon}</span> ${escapeHtml(f.title)} — ${escapeHtml(f.text)}`;
+      randomFactEl.classList.remove('fade-in');
+      void randomFactEl.offsetWidth;
+      randomFactEl.classList.add('fade-in');
+    }
+
+    function showRandomFact() {
+      const list = (currentCategory === 'All') ? facts : facts.filter(f => f.category === currentCategory);
+      const f = list[Math.floor(Math.random() * list.length)];
+      if (!f) return;
+      showFactById(f.id);
+    }
+
+    /* ========== Category Buttons Handling ========== */
+    const cats = ['All','Space','Science','Animals','History','Technology'];
+    cats.forEach(cat => {
+      const btn = document.getElementById('btn' + (cat === 'All' ? 'All' : cat));
+      if (btn) {
+        btn.addEventListener('click', () => {
+          currentCategory = cat;
+          // toggle active class
+          document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          renderCards(currentCategory === 'All' ? 'All' : currentCategory);
+        });
+      }
+    });
+
+    // Hooks for random/next buttons
+    document.getElementById('randomBtn').addEventListener('click', showRandomFact);
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      renderCards(currentCategory === 'All' ? 'All' : currentCategory);
+      showRandomFact();
+    });
+
+    // initial load
+    renderCards('All');
+
+    /* ========== Parallax Mouse Move ========== */
+    const parallaxLayers = document.querySelectorAll('.parallax .layer');
+    // move layers based on mouse position
+    window.addEventListener('mousemove', (e) => {
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      const dx = (e.clientX - cx);
+      const dy = (e.clientY - cy);
+      parallaxLayers.forEach(layer => {
+        const speed = parseFloat(layer.dataset.speed) || 0.03;
+        const tx = -dx * speed;
+        const ty = -dy * speed;
+        layer.style.transform = `translate3d(${tx}px, ${ty}px, 0) scale(1.05)`;
+      });
+    });
+
+    /* ========== Small helpers ========== */
+    function escapeHtml(unsafe) {
+      return unsafe
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
+  </script>
+</body>
+</html>
